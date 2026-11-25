@@ -41,6 +41,7 @@ export const PERMISSIONS = {
   "shopfloor.operate": ["admin", "production_manager", "operator"],
   "downtime.report": ["admin", "production_manager", "operator"],
   "maintenance.manage": MANAGEMENT,
+  "shifts.manage": MANAGEMENT,
   "quality.manage": MANAGEMENT,
   "analytics.view": MANAGEMENT,
   "system.configure": ["admin"],

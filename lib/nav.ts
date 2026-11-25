@@ -1,7 +1,11 @@
 import {
   ArrowLeftRightIcon,
   BoxesIcon,
+  CalendarClockIcon,
   ClipboardCheckIcon,
+  CogIcon,
+  OctagonAlertIcon,
+  WrenchIcon,
   ClipboardListIcon,
   FactoryIcon,
   MonitorSmartphoneIcon,
@@ -44,6 +48,15 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: "Work orders", href: "/production/work-orders", icon: ClipboardCheckIcon, permission: "workorders.view" },
       { title: "Bills of materials", href: "/production/boms", icon: NetworkIcon, permission: "bom.manage" },
       { title: "Workstations", href: "/production/workstations", icon: FactoryIcon, permission: "workstations.manage" },
+    ],
+  },
+  {
+    label: "Maintenance",
+    items: [
+      { title: "Machines", href: "/maintenance/machines", icon: CogIcon, permission: "maintenance.manage" },
+      { title: "Downtime", href: "/maintenance/downtime", icon: OctagonAlertIcon, permission: "downtime.report" },
+      { title: "Preventive maintenance", href: "/maintenance/pm", icon: WrenchIcon, permission: "maintenance.manage" },
+      { title: "Shift calendar", href: "/maintenance/shifts", icon: CalendarClockIcon, permission: "shifts.manage" },
     ],
   },
   {
