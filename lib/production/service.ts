@@ -2,7 +2,7 @@ import "server-only";
 import { nowIso, type Executor } from "@/lib/db/client";
 import { InventoryError, postTxn } from "@/lib/inventory/service";
 import { formatQty } from "@/lib/quantity";
-import { requiredComponentMilli, type WoStatus } from "./constants";
+import { requiredComponentMilli, type RunType, type WoStatus } from "./constants";
 
 export interface WorkOrderRecord {
   id: number;
@@ -181,4 +181,38 @@ export async function assertNoBomCycle(tx: Executor, parentItemId: number, compo
     );
     stack.push(...children.map((c) => c.component_item_id));
   }
+}
+
+/** Opens a run on a workstation after checking it's free and the work order is runnable. */
+export async function startRunWithin(tx: Executor, wo: WorkOrderRecord, workstationId: number, runType: RunType, userId: number): Promise<number> {
+  const ws = await tx.get<{ code: string; status: string; is_active: number }>("SELECT code, status, is_active FROM workstations WHERE id = ?", [workstationId]);
+  if (!ws?.is_active) throw new InventoryError("This workstation is not active.");
+  if (ws.status === "DOWN" || ws.status === "MAINTENANCE") {
+    throw new InventoryError(`${ws.code} is ${ws.status === "DOWN" ? "down" : "in maintenance"}. Production can't start until it's back up.`);
+  }
+  if (wo.workstation_id !== workstationId) throw new InventoryError(`${wo.wo_number} is scheduled on a different workstation.`);
+  if (wo.status !== "RELEASED" && wo.status !== "IN_PROGRESS") throw new InventoryError(`${wo.wo_number} isn't released for production.`);
+  const open = await tx.get<{ wo_number: string }>(
+    "SELECT o.wo_number FROM production_logs p JOIN work_orders o ON o.id = p.work_order_id WHERE p.workstation_id = ? AND p.end_time IS NULL",
+    [workstationId],
+  );
+  if (open) throw new InventoryError(`${ws.code} is already running ${open.wo_number}. End that run first.`);
+
+  const now = nowIso();
+  const { lastID } = await tx.run(
+    "INSERT INTO production_logs (work_order_id, workstation_id, operator_id, run_type, start_time) VALUES (?, ?, ?, ?, ?)",
+    [wo.id, workstationId, userId, runType, now],
+  );
+  await tx.run("UPDATE workstations SET status = 'RUNNING', updated_at = ? WHERE id = ?", [now, workstationId]);
+  if (wo.status === "RELEASED") {
+    await tx.run("UPDATE work_orders SET status = 'IN_PROGRESS', started_at = COALESCE(started_at, ?), updated_at = ? WHERE id = ?", [now, now, wo.id]);
+  }
+  return lastID;
+}
+
+/** Closes a run and frees the workstation (unless downtime has already changed its status). */
+export async function endRunWithin(tx: Executor, runId: number, workstationId: number, reason: "PAUSED" | "COMPLETED" | "SETUP_DONE") {
+  const now = nowIso();
+  await tx.run("UPDATE production_logs SET end_time = ?, end_reason = ? WHERE id = ?", [now, reason, runId]);
+  await tx.run("UPDATE workstations SET status = 'IDLE', updated_at = ? WHERE id = ? AND status = 'RUNNING'", [now, workstationId]);
 }

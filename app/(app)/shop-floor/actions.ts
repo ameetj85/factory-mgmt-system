@@ -8,7 +8,7 @@ import { nowIso, transaction, type Executor } from "@/lib/db/client";
 import { formError, idSchema, type FormState } from "@/lib/forms";
 import { claimIdempotencyKey, InventoryError } from "@/lib/inventory/service";
 import { SCRAP_REASONS, type RunType } from "@/lib/production/constants";
-import { loadWorkOrder, recordOutput, type WorkOrderRecord } from "@/lib/production/service";
+import { endRunWithin, loadWorkOrder, recordOutput, startRunWithin } from "@/lib/production/service";
 import { formatQty, parseQtyMilli } from "@/lib/quantity";
 
 // Every shop-floor action is keyed: a tablet retrying after a dropped connection must not double-count.
@@ -35,38 +35,6 @@ async function openRunWithOrder(tx: Executor, runId: number) {
   if (runRow.end_time) throw new InventoryError("This run has already ended. Refresh the screen.");
   const wo = (await loadWorkOrder(tx, runRow.work_order_id))!;
   return { runRow, wo };
-}
-
-async function startRunWithin(tx: Executor, wo: WorkOrderRecord, workstationId: number, runType: RunType, userId: number): Promise<number> {
-  const ws = await tx.get<{ code: string; status: string; is_active: number }>("SELECT code, status, is_active FROM workstations WHERE id = ?", [workstationId]);
-  if (!ws?.is_active) throw new InventoryError("This workstation is not active.");
-  if (ws.status === "DOWN" || ws.status === "MAINTENANCE") {
-    throw new InventoryError(`${ws.code} is ${ws.status === "DOWN" ? "down" : "in maintenance"}. Production can't start until it's back up.`);
-  }
-  if (wo.workstation_id !== workstationId) throw new InventoryError(`${wo.wo_number} is scheduled on a different workstation.`);
-  if (wo.status !== "RELEASED" && wo.status !== "IN_PROGRESS") throw new InventoryError(`${wo.wo_number} isn't released for production.`);
-  const open = await tx.get<{ wo_number: string }>(
-    "SELECT o.wo_number FROM production_logs p JOIN work_orders o ON o.id = p.work_order_id WHERE p.workstation_id = ? AND p.end_time IS NULL",
-    [workstationId],
-  );
-  if (open) throw new InventoryError(`${ws.code} is already running ${open.wo_number}. End that run first.`);
-
-  const now = nowIso();
-  const { lastID } = await tx.run(
-    "INSERT INTO production_logs (work_order_id, workstation_id, operator_id, run_type, start_time) VALUES (?, ?, ?, ?, ?)",
-    [wo.id, workstationId, userId, runType, now],
-  );
-  await tx.run("UPDATE workstations SET status = 'RUNNING', updated_at = ? WHERE id = ?", [now, workstationId]);
-  if (wo.status === "RELEASED") {
-    await tx.run("UPDATE work_orders SET status = 'IN_PROGRESS', started_at = COALESCE(started_at, ?), updated_at = ? WHERE id = ?", [now, now, wo.id]);
-  }
-  return lastID;
-}
-
-async function endRunWithin(tx: Executor, runId: number, workstationId: number, reason: "PAUSED" | "COMPLETED" | "SETUP_DONE") {
-  const now = nowIso();
-  await tx.run("UPDATE production_logs SET end_time = ?, end_reason = ? WHERE id = ?", [now, reason, runId]);
-  await tx.run("UPDATE workstations SET status = 'IDLE', updated_at = ? WHERE id = ? AND status = 'RUNNING'", [now, workstationId]);
 }
 
 export async function startRun(input: { workOrderId: number; workstationId: number; runType: RunType; key: string }): Promise<FormState> {

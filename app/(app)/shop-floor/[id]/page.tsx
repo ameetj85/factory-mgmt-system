@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { requirePermission } from "@/lib/auth/dal";
 import { db, SQL_NOW } from "@/lib/db/client";
 import type { RunType, WorkstationStatus } from "@/lib/production/constants";
+import { DowntimePanel } from "@/components/maintenance/downtime-panel";
+import { ReportDowntimeButton } from "@/components/maintenance/report-downtime-button";
 import { RunConsole, type ActiveRun } from "./run-console";
 import { WorkQueue, type QueuedOrder } from "./work-queue";
 
@@ -35,7 +37,26 @@ async function ConsoleContent({ params }: PageProps<"/shop-floor/[id]">) {
   );
   if (!ws || !ws.is_active) notFound();
 
-  const [run, queue] = await Promise.all([
+  const [downtime, run, queue] = await Promise.all([
+    db.get<{
+      id: number;
+      reason_code: string;
+      is_planned: number;
+      started_at: string;
+      notes: string | null;
+      reported_by: string;
+      paused_wo: string | null;
+      paused_wo_status: string | null;
+    }>(
+      `SELECT d.id, d.reason_code, d.is_planned, d.started_at, d.notes, u.full_name AS reported_by,
+              o.wo_number AS paused_wo, o.status AS paused_wo_status
+         FROM downtime_logs d
+         JOIN users u ON u.id = d.reported_by
+         LEFT JOIN production_logs p ON p.id = d.paused_run_id
+         LEFT JOIN work_orders o ON o.id = p.work_order_id
+        WHERE d.workstation_id = ? AND d.ended_at IS NULL`,
+      [id],
+    ),
     db.get<{
       id: number;
       run_type: RunType;
@@ -115,13 +136,32 @@ async function ConsoleContent({ params }: PageProps<"/shop-floor/[id]">) {
         <WorkstationStatusBadge status={ws.status} />
       </div>
 
-      {activeRun ? (
-        <RunConsole run={activeRun} />
+      {downtime ? (
+        <DowntimePanel
+          downtime={{
+            id: downtime.id,
+            reasonCode: downtime.reason_code,
+            isPlanned: downtime.is_planned === 1,
+            startedAt: downtime.started_at,
+            notes: downtime.notes,
+            reportedBy: downtime.reported_by,
+            resumableWoNumber:
+              downtime.paused_wo && (downtime.paused_wo_status === "RELEASED" || downtime.paused_wo_status === "IN_PROGRESS")
+                ? downtime.paused_wo
+                : null,
+          }}
+        />
+      ) : activeRun ? (
+        <RunConsole
+          run={activeRun}
+          downtimeButton={<ReportDowntimeButton workstationId={ws.id} workstationCode={ws.code} hasActiveRun />}
+        />
       ) : (
         <WorkQueue
           workstationId={ws.id}
           blocked={ws.status === "DOWN" || ws.status === "MAINTENANCE" ? ws.status : null}
           orders={queue.map((q) => ({ ...q, overdue: Boolean(q.overdue) }))}
+          downtimeButton={<ReportDowntimeButton workstationId={ws.id} workstationCode={ws.code} hasActiveRun={false} className="h-16" />}
         />
       )}
     </>

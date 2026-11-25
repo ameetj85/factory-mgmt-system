@@ -10,6 +10,7 @@ import { AutoRefresh } from "@/components/shop-floor/auto-refresh";
 import { Elapsed } from "@/components/shop-floor/elapsed";
 import { Progress } from "@/components/ui/progress";
 import { requirePermission } from "@/lib/auth/dal";
+import { downtimeReasonLabel } from "@/lib/maintenance/constants";
 import { db } from "@/lib/db/client";
 import { RUN_TYPE_LABELS, type RunType, type WorkstationStatus } from "@/lib/production/constants";
 import { formatQty } from "@/lib/quantity";
@@ -48,15 +49,19 @@ async function ShopFloorContent() {
     uom: string | null;
     qty_target_milli: number | null;
     qty_completed_milli: number | null;
+    down_reason: string | null;
+    down_since: string | null;
   }>(
     `SELECT w.id, w.code, w.name, w.status,
             (SELECT COUNT(*) FROM work_orders q WHERE q.workstation_id = w.id AND q.status IN ('RELEASED', 'IN_PROGRESS')) AS queued,
-            p.run_type, p.start_time, u.full_name AS operator, o.wo_number, i.sku, i.uom, o.qty_target_milli, o.qty_completed_milli
+            p.run_type, p.start_time, u.full_name AS operator, o.wo_number, i.sku, i.uom, o.qty_target_milli, o.qty_completed_milli,
+            d.reason_code AS down_reason, d.started_at AS down_since
        FROM workstations w
        LEFT JOIN production_logs p ON p.workstation_id = w.id AND p.end_time IS NULL
        LEFT JOIN users u ON u.id = p.operator_id
        LEFT JOIN work_orders o ON o.id = p.work_order_id
        LEFT JOIN items i ON i.id = o.item_id
+       LEFT JOIN downtime_logs d ON d.workstation_id = w.id AND d.ended_at IS NULL
       WHERE w.is_active = 1
       ORDER BY w.code COLLATE NOCASE`,
   );
@@ -87,7 +92,14 @@ async function ShopFloorContent() {
                   </div>
                   <WorkstationStatusBadge status={s.status} />
                 </div>
-                {s.wo_number ? (
+                {s.down_reason ? (
+                  <div className={cn("space-y-1", s.status === "MAINTENANCE" ? "text-warning" : "text-destructive")}>
+                    <p className="text-lg font-semibold">{downtimeReasonLabel(s.down_reason)}</p>
+                    <p className="text-sm">
+                      Stopped for <Elapsed since={s.down_since!} className="font-mono font-semibold tabular-nums" />
+                    </p>
+                  </div>
+                ) : s.wo_number ? (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2 text-sm">
                       <span className="font-mono font-semibold">{s.wo_number}</span>

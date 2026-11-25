@@ -32,10 +32,12 @@ export function WorkQueue({
   workstationId,
   orders,
   blocked,
+  downtimeButton,
 }: {
   workstationId: number;
   orders: QueuedOrder[];
   blocked: "DOWN" | "MAINTENANCE" | null;
+  downtimeButton?: React.ReactNode;
 }) {
   const [pending, startTransition] = useTransition();
   const idempotency = useIdempotencyKey();
@@ -58,7 +60,10 @@ export function WorkQueue({
           This workstation is {blocked === "DOWN" ? "down" : "in maintenance"}. Production can&apos;t start until it&apos;s back up.
         </div>
       )}
-      <h2 className="text-xl font-semibold">Ready to run</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold">Ready to run</h2>
+        {!blocked && <div className="w-full sm:w-72">{downtimeButton}</div>}
+      </div>
       {orders.length === 0 ? (
         <EmptyState icon={InboxIcon} title="No work scheduled here" description="Released work orders for this workstation will appear here." />
       ) : (

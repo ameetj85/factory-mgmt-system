@@ -47,7 +47,7 @@ export interface ActiveRun {
 
 type Entry = "good" | "scrap" | null;
 
-export function RunConsole({ run }: { run: ActiveRun }) {
+export function RunConsole({ run, downtimeButton }: { run: ActiveRun; downtimeButton?: React.ReactNode }) {
   const [pending, startTransition] = useTransition();
   const [entry, setEntry] = useState<Entry>(null);
   const [value, setValue] = useState("");
@@ -199,6 +199,7 @@ export function RunConsole({ run }: { run: ActiveRun }) {
             <CheckCheckIcon className="size-6" /> Finish order
           </Button>
         </div>
+        {downtimeButton}
       </section>
 
       <Dialog open={entry !== null} onOpenChange={(open) => !open && setEntry(null)}>

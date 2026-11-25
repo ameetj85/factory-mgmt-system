@@ -9,4 +9,8 @@ export const AUDIT_CATEGORIES = [
   { value: "workstation", label: "Workstations" },
   { value: "work_order", label: "Work orders" },
   { value: "production", label: "Shop floor" },
+  { value: "downtime", label: "Downtime" },
+  { value: "maintenance", label: "Preventive maintenance" },
+  { value: "machine", label: "Machine registry" },
+  { value: "shift", label: "Shift calendar" },
 ] as const;
