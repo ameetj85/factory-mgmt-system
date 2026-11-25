@@ -170,6 +170,7 @@ export async function ledgerEntries(filters: LedgerFilters, limit: number, offse
               WHEN 'shipment' THEN (SELECT shipment_number || ' · ' || customer_name FROM shipments WHERE id = t.reference_id)
               WHEN 'adjustment' THEN 'Adjustment #' || t.reference_id
               WHEN 'transfer' THEN 'Transfer #' || t.reference_id
+              WHEN 'work_order' THEN (SELECT wo_number FROM work_orders WHERE id = t.reference_id)
               ELSE NULL
             END AS reference_label
        FROM inventory_txns t

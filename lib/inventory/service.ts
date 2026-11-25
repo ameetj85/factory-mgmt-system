@@ -23,8 +23,8 @@ export async function claimIdempotencyKey(
 /** Next sequential document number for today, e.g. RCV-20261125-0003. Call inside a transaction. */
 export async function nextDocumentNumber(
   tx: Executor,
-  table: "receipts" | "shipments",
-  column: "receipt_number" | "shipment_number",
+  table: "receipts" | "shipments" | "work_orders",
+  column: "receipt_number" | "shipment_number" | "wo_number",
   prefix: string,
 ): Promise<string> {
   const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");

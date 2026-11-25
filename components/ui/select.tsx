@@ -59,7 +59,9 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
+  // Open below the trigger. The default "item-aligned" overlays the list on the field,
+  // which hides the first option behind the scroll button when nothing is selected yet.
+  position = "popper",
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {

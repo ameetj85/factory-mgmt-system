@@ -37,6 +37,7 @@ export const PERMISSIONS = {
   "bom.manage": MANAGEMENT,
   "workorders.view": ALL,
   "workorders.manage": MANAGEMENT,
+  "workstations.manage": MANAGEMENT,
   "shopfloor.operate": ["admin", "production_manager", "operator"],
   "downtime.report": ["admin", "production_manager", "operator"],
   "maintenance.manage": MANAGEMENT,
