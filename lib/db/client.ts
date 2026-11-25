@@ -57,20 +57,34 @@ function toPlainRows<T>(result: unknown): T[] {
   return result.map((row) => ({ ...(row as Row) }) as T);
 }
 
-function createExecutor(getConn: () => Promise<Database>): Executor {
+/** True for errors that mean the socket died (network blip, server restart), not that the SQL was bad. */
+function isConnectionError(error: unknown): boolean {
+  const e = error as { errorCode?: string; message?: string; cause?: { code?: string } };
+  return e?.errorCode === "ERR_CONNECTION_ERROR" || e?.cause?.code === "ECONNRESET" || /ECONNRESET|connection (closed|lost)|not connected/i.test(e?.message ?? "");
+}
+
+function createExecutor(getConn: () => Promise<Database>, requestScoped = true, onConnectionError?: () => void): Executor {
   return {
     async all<T>(sql: string, params?: SqlValue[]) {
       // Database reads are request-time data: never prerender them into the static shell.
-      await connection();
-      const conn = await getConn();
-      return toPlainRows<T>(await conn.sql(sql, ...normalizeParams(params)));
+      if (requestScoped) await connection();
+      try {
+        const conn = await getConn();
+        return toPlainRows<T>(await conn.sql(sql, ...normalizeParams(params)));
+      } catch (error) {
+        // Reads are safe to repeat: drop the dead shared connection and try once on a fresh one.
+        if (!onConnectionError || !isConnectionError(error)) throw error;
+        onConnectionError();
+        const conn = await getConn();
+        return toPlainRows<T>(await conn.sql(sql, ...normalizeParams(params)));
+      }
     },
     async get<T>(sql: string, params?: SqlValue[]) {
       const rows = await this.all<T>(sql, params);
       return rows[0];
     },
     async run(sql: string, params?: SqlValue[]) {
-      await connection();
+      if (requestScoped) await connection();
       const conn = await getConn();
       const result = await conn.sql(sql, ...normalizeParams(params));
       return {
@@ -102,7 +116,16 @@ function sharedConnection(): Promise<Database> {
   return pending;
 }
 
-export const db: Executor = createExecutor(sharedConnection);
+function resetSharedConnection() {
+  const stale = globalForDb.__fmsDb;
+  globalForDb.__fmsDb = undefined;
+  stale?.then((d) => d.close()).catch(() => {});
+}
+
+export const db: Executor = createExecutor(sharedConnection, true, resetSharedConnection);
+
+/** For work outside a request (scheduled jobs). Never use it in rendering code. */
+export const backgroundDb: Executor = createExecutor(sharedConnection, false, resetSharedConnection);
 
 /**
  * Runs `fn` inside a BEGIN IMMEDIATE transaction on a dedicated connection, so statements

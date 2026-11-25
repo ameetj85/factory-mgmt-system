@@ -44,6 +44,8 @@ Functional requirements live in [FUNCTIONAL-REQ.md](FUNCTIONAL-REQ.md).
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm run db:migrate` | Apply pending SQL migrations from `db/migrations` |
+| `npm run db:backup` | Write a database backup to `BACKUP_DIR` (default `./backups`) |
+| `npm run db:restore -- <file>` | Restore a backup into an empty database (`RESTORE_CONNECTION_STRING`) |
 
 ## Authentication and roles
 
@@ -53,6 +55,12 @@ Functional requirements live in [FUNCTIONAL-REQ.md](FUNCTIONAL-REQ.md).
 - Administrators create accounts, either setting a password or emailing the user a link to set their own.
 - Roles: **Admin**, **Production Manager**, **Shop Floor Operator**, **Warehouse Clerk**. Permissions per role are defined in `lib/auth/permissions.ts`.
 - Sign-ins, password changes and changes to users are written to an append-only audit log.
+
+## Backups
+
+- Backups are gzip-compressed JSON snapshots of the schema and every row, written by `npm run db:backup`, the **Back up now** button under Administration → Backups, or automatically every `BACKUP_INTERVAL_HOURS` while the server runs (keeping the newest `BACKUP_KEEP`, default 14).
+- Restores only run into a new, empty database, so a backup can never overwrite live data.
+- The `backups/` folder holds business data and is git-ignored. Copy backups off the server, or also enable SQLite Cloud's managed backups for the database.
 
 ## Database notes
 

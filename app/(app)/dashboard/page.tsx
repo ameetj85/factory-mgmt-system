@@ -15,6 +15,7 @@ import { db } from "@/lib/db/client";
 import { formatAuditAction, formatRelative } from "@/lib/format";
 import { LowStockCard } from "./low-stock-card";
 import { MaintenanceCard } from "./maintenance-card";
+import { OeeCard } from "./oee-card";
 import { QualityCard } from "./quality-card";
 import { ProductionCard } from "./production-card";
 
@@ -46,6 +47,7 @@ async function DashboardPageContent() {
       </section>
 
       {can(user.role, "audit.view") ? <AdminOverview showUsersLink={can(user.role, "users.manage")} /> : <MemberOverview />}
+      {can(user.role, "analytics.view") && <OeeCard />}
       {can(user.role, "workorders.view") && <ProductionCard shopFloorLink={can(user.role, "shopfloor.operate")} />}
       {can(user.role, "maintenance.manage") && <MaintenanceCard />}
       {can(user.role, "quality.view") && <QualityCard />}

@@ -117,7 +117,8 @@ async function ItemDetailPageContent({ params }: PageProps<"/inventory/items/[id
                     <TableHead className="pl-4">Lot</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="hidden pr-4 md:table-cell">First received</TableHead>
+                    <TableHead className="hidden md:table-cell">First received</TableHead>
+                    <TableHead className="w-20 pr-4" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -138,8 +139,17 @@ async function ItemDetailPageContent({ params }: PageProps<"/inventory/items/[id
                         <span className="text-muted-foreground ml-2 text-xs">{lot.location_name}</span>
                       </TableCell>
                       <TableCell className="text-right font-medium tabular-nums">{formatQty(lot.qty_milli, item.uom)}</TableCell>
-                      <TableCell className="text-muted-foreground hidden pr-4 text-sm md:table-cell">
+                      <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
                         <LocalTime iso={lot.first_txn_at} />
+                      </TableCell>
+                      <TableCell className="pr-4 text-right">
+                        <Link
+                          href={`/print/labels?item=${item.id}&lot=${encodeURIComponent(lot.batch_number)}`}
+                          target="_blank"
+                          className="text-primary text-xs font-medium hover:underline"
+                        >
+                          Labels
+                        </Link>
                       </TableCell>
                     </TableRow>
                   ))}

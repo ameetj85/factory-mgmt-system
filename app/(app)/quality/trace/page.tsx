@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowDownLeftIcon, ArrowUpRightIcon, ClipboardPenIcon, GitBranchIcon, SearchXIcon, UsersIcon } from "lucide-react";
+import { ArrowDownLeftIcon, ArrowUpRightIcon, ClipboardPenIcon, PrinterIcon, GitBranchIcon, SearchXIcon, UsersIcon } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { LocalTime } from "@/components/local-time";
 import { PageHeader } from "@/components/page-header";
@@ -120,6 +120,11 @@ async function LotTrace({ itemId, lot, canInspect }: { itemId: number; lot: stri
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
               <Link href={`/inventory/ledger?item=${itemId}&batch=${encodeURIComponent(lot)}`}>Ledger entries</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/print/labels?item=${itemId}&lot=${encodeURIComponent(lot)}`} target="_blank">
+                <PrinterIcon /> Labels
+              </Link>
             </Button>
             {canInspect && (
               <Button asChild>

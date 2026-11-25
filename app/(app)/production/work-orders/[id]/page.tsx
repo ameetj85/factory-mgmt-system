@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { AlertTriangleIcon, ArrowLeftIcon, CheckCircle2Icon, ClipboardPenIcon, PackageIcon, PercentIcon, TimerIcon, TrashIcon } from "lucide-react";
+import { AlertTriangleIcon, ArrowLeftIcon, CheckCircle2Icon, ClipboardPenIcon, PrinterIcon, PackageIcon, PercentIcon, TimerIcon, TrashIcon } from "lucide-react";
 import { LocalTime } from "@/components/local-time";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PriorityBadge, WoStatusBadge } from "@/components/production/badges";
@@ -145,6 +145,11 @@ async function WorkOrderContent({ params }: PageProps<"/production/work-orders/[
             {wo.notes && <p className="text-muted-foreground max-w-2xl text-sm italic">{wo.notes}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/print/work-orders/${wo.id}`} target="_blank">
+              <PrinterIcon /> Traveler
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href={`/quality/inspect?wo=${wo.id}`}>
               <ClipboardPenIcon /> Inspect
