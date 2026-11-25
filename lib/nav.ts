@@ -1,7 +1,11 @@
 import {
   ArrowLeftRightIcon,
   BoxesIcon,
+  ClipboardCheckIcon,
   ClipboardListIcon,
+  FactoryIcon,
+  MonitorSmartphoneIcon,
+  NetworkIcon,
   LayoutDashboardIcon,
   MapPinIcon,
   PackageIcon,
@@ -32,6 +36,15 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Overview",
     items: [{ title: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon, permission: "dashboard.view" }],
+  },
+  {
+    label: "Production",
+    items: [
+      { title: "Shop floor", href: "/shop-floor", icon: MonitorSmartphoneIcon, permission: "shopfloor.operate" },
+      { title: "Work orders", href: "/production/work-orders", icon: ClipboardCheckIcon, permission: "workorders.view" },
+      { title: "Bills of materials", href: "/production/boms", icon: NetworkIcon, permission: "bom.manage" },
+      { title: "Workstations", href: "/production/workstations", icon: FactoryIcon, permission: "workstations.manage" },
+    ],
   },
   {
     label: "Inventory",
