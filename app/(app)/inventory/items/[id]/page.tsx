@@ -48,8 +48,9 @@ async function ItemDetailPageContent({ params }: PageProps<"/inventory/items/[id
   if (!item) notFound();
 
   const [lots, history] = await Promise.all([
-    db.all<{ location_code: string; location_name: string; batch_number: string; qty_milli: number; first_txn_at: string; last_txn_at: string }>(
-      `SELECT l.code AS location_code, l.name AS location_name, s.batch_number, s.qty_milli, s.first_txn_at, s.last_txn_at
+    db.all<{ location_code: string; location_name: string; batch_number: string; qty_milli: number; first_txn_at: string; last_txn_at: string; on_hold: number }>(
+      `SELECT l.code AS location_code, l.name AS location_name, s.batch_number, s.qty_milli, s.first_txn_at, s.last_txn_at,
+              EXISTS (SELECT 1 FROM lot_holds h WHERE h.item_id = s.item_id AND h.batch_number = s.batch_number AND h.status = 'ACTIVE') AS on_hold
          FROM stock_levels s JOIN locations l ON l.id = s.location_id
         WHERE s.item_id = ? AND s.qty_milli <> 0
         ORDER BY s.first_txn_at, s.batch_number`,
@@ -123,9 +124,14 @@ async function ItemDetailPageContent({ params }: PageProps<"/inventory/items/[id
                   {lots.map((lot) => (
                     <TableRow key={`${lot.location_code}-${lot.batch_number}`} className="hover:bg-accent/40 transition-colors">
                       <TableCell className="pl-4">
-                        <Link href={`/inventory/ledger?batch=${encodeURIComponent(lot.batch_number)}`} className="hover:text-primary font-mono text-sm transition-colors">
+                        <Link href={`/quality/trace?item=${item.id}&lot=${encodeURIComponent(lot.batch_number)}`} className="hover:text-primary font-mono text-sm transition-colors">
                           {lot.batch_number}
                         </Link>
+                        {lot.on_hold ? (
+                          <Badge variant="outline" className="border-destructive/40 text-destructive ml-2 h-5">
+                            On hold
+                          </Badge>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">{lot.location_code}</span>

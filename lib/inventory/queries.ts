@@ -23,6 +23,7 @@ export interface StockLot {
   locationCode: string;
   batchNumber: string;
   qtyMilli: number;
+  onHold: boolean;
 }
 
 export async function activeItemOptions(types?: ItemType[]): Promise<ItemOption[]> {
@@ -38,9 +39,10 @@ export async function activeLocationOptions(): Promise<LocationOption[]> {
 }
 
 export async function availableLots(itemId?: number): Promise<StockLot[]> {
-  return db.all<StockLot>(
+  const rows = await db.all<Omit<StockLot, "onHold"> & { onHold: number }>(
     `SELECT s.item_id AS itemId, s.location_id AS locationId, l.code AS locationCode,
-            s.batch_number AS batchNumber, s.qty_milli AS qtyMilli
+            s.batch_number AS batchNumber, s.qty_milli AS qtyMilli,
+            EXISTS (SELECT 1 FROM lot_holds h WHERE h.item_id = s.item_id AND h.batch_number = s.batch_number AND h.status = 'ACTIVE') AS onHold
        FROM stock_levels s
        JOIN locations l ON l.id = s.location_id
        JOIN items i ON i.id = s.item_id
@@ -48,6 +50,7 @@ export async function availableLots(itemId?: number): Promise<StockLot[]> {
       ORDER BY s.first_txn_at, s.batch_number`,
     itemId ? [itemId] : [],
   );
+  return rows.map((r) => ({ ...r, onHold: Boolean(r.onHold) }));
 }
 
 export interface StockRow {
@@ -171,6 +174,7 @@ export async function ledgerEntries(filters: LedgerFilters, limit: number, offse
               WHEN 'adjustment' THEN 'Adjustment #' || t.reference_id
               WHEN 'transfer' THEN 'Transfer #' || t.reference_id
               WHEN 'work_order' THEN (SELECT wo_number FROM work_orders WHERE id = t.reference_id)
+              WHEN 'lot_hold' THEN 'Quality hold #' || t.reference_id
               ELSE NULL
             END AS reference_label
        FROM inventory_txns t

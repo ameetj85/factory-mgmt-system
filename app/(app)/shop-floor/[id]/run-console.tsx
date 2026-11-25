@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCheckIcon, CheckIcon, Loader2Icon, PauseIcon, PlayIcon, Trash2Icon, UserIcon } from "lucide-react";
+import Link from "next/link";
+import { CheckCheckIcon, CheckIcon, ClipboardPenIcon, Loader2Icon, PauseIcon, PlayIcon, ShieldAlertIcon, Trash2Icon, UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Elapsed } from "@/components/shop-floor/elapsed";
 import { Numpad } from "@/components/shop-floor/numpad";
@@ -47,7 +48,7 @@ export interface ActiveRun {
 
 type Entry = "good" | "scrap" | null;
 
-export function RunConsole({ run, downtimeButton }: { run: ActiveRun; downtimeButton?: React.ReactNode }) {
+export function RunConsole({ run, downtimeButton, outputOnHold }: { run: ActiveRun; downtimeButton?: React.ReactNode; outputOnHold?: string | null }) {
   const [pending, startTransition] = useTransition();
   const [entry, setEntry] = useState<Entry>(null);
   const [value, setValue] = useState("");
@@ -143,6 +144,11 @@ export function RunConsole({ run, downtimeButton }: { run: ActiveRun; downtimeBu
         </div>
 
         {run.notes && <p className="bg-muted rounded-lg p-3 text-sm italic">{run.notes}</p>}
+        {outputOnHold && (
+          <p className="border-destructive/40 bg-destructive/10 text-destructive flex items-start gap-2 rounded-lg border p-3 text-sm font-medium">
+            <ShieldAlertIcon className="mt-0.5 size-4 shrink-0" /> Output lot {run.woNumber} is on quality hold: {outputOnHold}
+          </p>
+        )}
       </section>
 
       <section className="space-y-3">
@@ -199,6 +205,11 @@ export function RunConsole({ run, downtimeButton }: { run: ActiveRun; downtimeBu
             <CheckCheckIcon className="size-6" /> Finish order
           </Button>
         </div>
+        <Button asChild variant="outline" className="hover:border-primary/60 hover:text-primary h-16 w-full text-lg">
+          <Link href={`/quality/inspect?wo=${run.workOrderId}`}>
+            <ClipboardPenIcon className="size-6" /> Inspect output
+          </Link>
+        </Button>
         {downtimeButton}
       </section>
 

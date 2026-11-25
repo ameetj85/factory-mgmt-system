@@ -3,7 +3,11 @@ import {
   BoxesIcon,
   CalendarClockIcon,
   ClipboardCheckIcon,
+  ClipboardPenIcon,
   CogIcon,
+  GitBranchIcon,
+  ListChecksIcon,
+  ShieldAlertIcon,
   OctagonAlertIcon,
   WrenchIcon,
   ClipboardListIcon,
@@ -48,6 +52,16 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: "Work orders", href: "/production/work-orders", icon: ClipboardCheckIcon, permission: "workorders.view" },
       { title: "Bills of materials", href: "/production/boms", icon: NetworkIcon, permission: "bom.manage" },
       { title: "Workstations", href: "/production/workstations", icon: FactoryIcon, permission: "workstations.manage" },
+    ],
+  },
+  {
+    label: "Quality",
+    items: [
+      { title: "Inspect", href: "/quality/inspect", icon: ClipboardPenIcon, permission: "quality.inspect" },
+      { title: "Inspections", href: "/quality/inspections", icon: ListChecksIcon, permission: "quality.view" },
+      { title: "Lot holds", href: "/quality/holds", icon: ShieldAlertIcon, permission: "quality.view" },
+      { title: "Traceability", href: "/quality/trace", icon: GitBranchIcon, permission: "quality.view" },
+      { title: "Checklists", href: "/quality/checklists", icon: ClipboardListIcon, permission: "quality.manage" },
     ],
   },
   {

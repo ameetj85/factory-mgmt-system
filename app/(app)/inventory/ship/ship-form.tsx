@@ -88,6 +88,7 @@ export function ShipForm({ items, lots }: { items: ItemOption[]; lots: StockLot[
               </div>
               <div className="grid gap-1.5">
                 <LotPicker
+                  blockHeld
                   lots={itemLots}
                   uom={item?.uom}
                   value={line.lot}

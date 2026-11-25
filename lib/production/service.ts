@@ -1,6 +1,6 @@
 import "server-only";
 import { nowIso, type Executor } from "@/lib/db/client";
-import { InventoryError, postTxn } from "@/lib/inventory/service";
+import { InventoryError, notHeldSql, postTxn } from "@/lib/inventory/service";
 import { formatQty } from "@/lib/quantity";
 import { requiredComponentMilli, type RunType, type WoStatus } from "./constants";
 
@@ -76,17 +76,22 @@ export async function backflushMaterials(
     let remaining = target - (consumed.get(line.component_item_id) ?? 0);
     if (remaining <= 0) continue;
 
-    const lots = await tx.all<{ batch_number: string; qty_milli: number }>(
-      `SELECT batch_number, qty_milli FROM stock_levels
-        WHERE item_id = ? AND location_id = ? AND qty_milli > 0
-        ORDER BY first_txn_at, batch_number`,
+    // Lots on quality hold are never consumed.
+    const allLots = await tx.all<{ batch_number: string; qty_milli: number; held: number }>(
+      `SELECT s.batch_number, s.qty_milli, NOT ${notHeldSql("s")} AS held FROM stock_levels s
+        WHERE s.item_id = ? AND s.location_id = ? AND s.qty_milli > 0
+        ORDER BY s.first_txn_at, s.batch_number`,
       [line.component_item_id, wo.material_location_id],
     );
+    const lots = allLots.filter((l) => !l.held);
     const available = lots.reduce((sum, l) => sum + l.qty_milli, 0);
     if (available < remaining) {
+      const heldQty = allLots.filter((l) => l.held).reduce((sum, l) => sum + l.qty_milli, 0);
       throw new InventoryError(
         `Not enough ${line.sku} at ${location?.code ?? "the material location"}: needs ${formatQty(remaining, line.uom)}, ` +
-          `${formatQty(available, line.uom)} available. Receive or move stock there first.`,
+          `${formatQty(available, line.uom)} available` +
+          (heldQty > 0 ? ` (${formatQty(heldQty, line.uom)} more is on quality hold)` : "") +
+          ". Receive or move stock there first.",
       );
     }
 

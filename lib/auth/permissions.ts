@@ -43,6 +43,8 @@ export const PERMISSIONS = {
   "maintenance.manage": MANAGEMENT,
   "shifts.manage": MANAGEMENT,
   "quality.manage": MANAGEMENT,
+  "quality.inspect": ALL,
+  "quality.view": ALL,
   "analytics.view": MANAGEMENT,
   "system.configure": ["admin"],
 } as const satisfies Record<string, readonly Role[]>;
