@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:backup": "node --env-file=.env.local scripts/backup.mjs",
+    "db:restore": "node --env-file=.env.local scripts/restore.mjs"
   },
   "dependencies": {
     "@sqlitecloud/drivers": "^1.0.982",

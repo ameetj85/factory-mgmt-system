@@ -5,6 +5,8 @@ import {
   ClipboardCheckIcon,
   ClipboardPenIcon,
   CogIcon,
+  DatabaseBackupIcon,
+  GaugeIcon,
   GitBranchIcon,
   ListChecksIcon,
   ShieldAlertIcon,
@@ -43,7 +45,10 @@ export interface NavSection {
 export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Overview",
-    items: [{ title: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon, permission: "dashboard.view" }],
+    items: [
+      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon, permission: "dashboard.view" },
+      { title: "OEE & KPIs", href: "/analytics", icon: GaugeIcon, permission: "analytics.view" },
+    ],
   },
   {
     label: "Production",
@@ -91,6 +96,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { title: "Users", href: "/admin/users", icon: UsersIcon, permission: "users.manage" },
       { title: "Audit log", href: "/admin/audit-log", icon: ScrollTextIcon, permission: "audit.view" },
+      { title: "Backups", href: "/admin/backups", icon: DatabaseBackupIcon, permission: "system.configure" },
     ],
   },
 ];
