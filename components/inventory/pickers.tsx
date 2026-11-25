@@ -86,6 +86,7 @@ export function LotPicker({
   id,
   invalid,
   disabled,
+  blockHeld,
 }: {
   lots: StockLot[];
   uom?: string;
@@ -94,6 +95,8 @@ export function LotPicker({
   id?: string;
   invalid?: boolean;
   disabled?: boolean;
+  /** Make lots on quality hold unselectable (e.g. for shipping). */
+  blockHeld?: boolean;
 }) {
   return (
     <Combobox
@@ -108,8 +111,9 @@ export function LotPicker({
       options={lots.map((l) => ({
         value: lotKey(l),
         label: `${l.batchNumber} @ ${l.locationCode}`,
-        description: `${formatQty(l.qtyMilli, uom)} available`,
+        description: `${formatQty(l.qtyMilli, uom)} available${l.onHold ? " · on quality hold" : ""}`,
         keywords: [l.batchNumber, l.locationCode],
+        disabled: blockHeld && l.onHold,
       }))}
     />
   );

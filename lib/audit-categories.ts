@@ -13,4 +13,5 @@ export const AUDIT_CATEGORIES = [
   { value: "maintenance", label: "Preventive maintenance" },
   { value: "machine", label: "Machine registry" },
   { value: "shift", label: "Shift calendar" },
+  { value: "quality", label: "Quality" },
 ] as const;

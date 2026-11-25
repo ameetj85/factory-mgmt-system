@@ -9,6 +9,7 @@ import { nowIso, transaction, type Executor } from "@/lib/db/client";
 import { ADJUSTMENT_REASONS, txnTypeForReason } from "@/lib/inventory/constants";
 import {
   assertAvailable,
+  assertNotHeld,
   claimIdempotencyKey,
   generateLotNumber,
   InventoryError,
@@ -177,6 +178,7 @@ export async function shipStock(_prev: FormState, formData: FormData): Promise<F
       for (const d of demand.values()) {
         const item = await itemLabel(tx, d.itemId);
         const location = await assertLocationActive(tx, d.locationId);
+        await assertNotHeld(tx, d.itemId, d.batchNumber, item.sku);
         await assertAvailable(tx, d.itemId, d.locationId, d.batchNumber, d.qty, () =>
           `Not enough ${item.sku} in lot ${d.batchNumber} at ${location.code} to ship ${formatQty(d.qty, item.uom)}.`,
         );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PackagePlusIcon } from "lucide-react";
@@ -73,8 +74,13 @@ async function ReceivePageContent() {
                       {r.supplier_name}
                       {r.supplier_reference && <span className="text-muted-foreground"> · {r.supplier_reference}</span>}
                     </p>
-                    <p className="text-muted-foreground text-xs">
-                      <LocalTime iso={r.received_at} /> · {r.received_by}
+                    <p className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+                      <span>
+                        <LocalTime iso={r.received_at} /> · {r.received_by}
+                      </span>
+                      <Link href={`/quality/inspect?receipt=${r.id}`} className="text-primary font-medium hover:underline">
+                        Inspect
+                      </Link>
                     </p>
                   </li>
                 ))}

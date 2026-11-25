@@ -23,8 +23,8 @@ export async function claimIdempotencyKey(
 /** Next sequential document number for today, e.g. RCV-20261125-0003. Call inside a transaction. */
 export async function nextDocumentNumber(
   tx: Executor,
-  table: "receipts" | "shipments" | "work_orders",
-  column: "receipt_number" | "shipment_number" | "wo_number",
+  table: "receipts" | "shipments" | "work_orders" | "inspections",
+  column: "receipt_number" | "shipment_number" | "wo_number" | "inspection_number",
   prefix: string,
 ): Promise<string> {
   const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -94,6 +94,20 @@ export async function postTxn(tx: Executor, input: PostTxnInput): Promise<number
 }
 
 export class InventoryError extends Error {}
+
+/** SQL condition (for a row aliased `alias` with item_id and batch_number) that excludes lots on quality hold. */
+export function notHeldSql(alias: string): string {
+  return `NOT EXISTS (SELECT 1 FROM lot_holds h WHERE h.item_id = ${alias}.item_id AND h.batch_number = ${alias}.batch_number AND h.status = 'ACTIVE')`;
+}
+
+/** Throws when the lot is on an active quality hold. */
+export async function assertNotHeld(tx: Executor, itemId: number, batchNumber: string, sku: string): Promise<void> {
+  const hold = await tx.get<{ reason: string }>(
+    "SELECT reason FROM lot_holds WHERE item_id = ? AND batch_number = ? AND status = 'ACTIVE'",
+    [itemId, batchNumber],
+  );
+  if (hold) throw new InventoryError(`Lot ${batchNumber} of ${sku} is on quality hold (${hold.reason}) and can't be used until it's released.`);
+}
 
 /** Throws InventoryError when taking `qtyMilli` out of a batch would make it negative. */
 export async function assertAvailable(

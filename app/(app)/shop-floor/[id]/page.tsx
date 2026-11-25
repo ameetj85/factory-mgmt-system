@@ -97,6 +97,13 @@ async function ConsoleContent({ params }: PageProps<"/shop-floor/[id]">) {
     ),
   ]);
 
+  const outputHold = run
+    ? await db.get<{ reason: string }>(
+        "SELECT h.reason FROM lot_holds h JOIN work_orders o ON o.item_id = h.item_id AND o.wo_number = h.batch_number WHERE o.id = ? AND h.status = 'ACTIVE'",
+        [run.wo_id],
+      )
+    : undefined;
+
   const activeRun: ActiveRun | null = run
     ? {
         id: run.id,
@@ -154,6 +161,7 @@ async function ConsoleContent({ params }: PageProps<"/shop-floor/[id]">) {
       ) : activeRun ? (
         <RunConsole
           run={activeRun}
+          outputOnHold={outputHold?.reason ?? null}
           downtimeButton={<ReportDowntimeButton workstationId={ws.id} workstationCode={ws.code} hasActiveRun />}
         />
       ) : (
