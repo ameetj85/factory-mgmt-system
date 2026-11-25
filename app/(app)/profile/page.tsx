@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { LaptopIcon, MailIcon, ShieldIcon, UserIcon } from "lucide-react";
 import { LocalTime } from "@/components/local-time";
 import { PageHeader } from "@/components/page-header";
@@ -39,7 +41,15 @@ function describeAgent(userAgent: string | null): string {
   return `${browser} on ${os}`;
 }
 
-export default async function ProfilePage() {
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <ProfilePageContent />
+    </Suspense>
+  );
+}
+
+async function ProfilePageContent() {
   const user = await requireUser();
   const [details, sessions, thisSession] = await Promise.all([
     db.get<{ created_at: string; last_login_at: string | null; password_changed_at: string | null }>(

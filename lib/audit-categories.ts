@@ -2,4 +2,7 @@
 export const AUDIT_CATEGORIES = [
   { value: "auth", label: "Authentication" },
   { value: "user", label: "User management" },
+  { value: "item", label: "Item master" },
+  { value: "location", label: "Locations" },
+  { value: "inventory", label: "Inventory movements" },
 ] as const;

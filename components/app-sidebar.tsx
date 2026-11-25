@@ -75,7 +75,8 @@ export function AppSidebar({ user }: { user: SidebarUser }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const active =
+                    pathname === item.href || (!item.exact && pathname.startsWith(`${item.href}/`));
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton

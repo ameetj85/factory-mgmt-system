@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseCents, parseQtyMilli } from "@/lib/quantity";
 
 /** Result shape returned by every form Server Action, consumed with useActionState. */
 export type FormState = {
@@ -48,6 +49,52 @@ export function withPasswordConfirmation<T extends z.ZodObject<{ password: z.Zod
     path: ["confirmPassword"],
   });
 }
+
+/** Decimal quantity input (up to 3 decimals) → integer thousandths. */
+export function qtyMilliSchema({ allowZero = false, label = "quantity" }: { allowZero?: boolean; label?: string } = {}) {
+  return z
+    .string()
+    .trim()
+    .transform((value, ctx) => {
+      const milli = parseQtyMilli(value);
+      if (milli === null) {
+        ctx.addIssue({ code: "custom", message: `Enter a ${label} with up to 3 decimals.` });
+        return z.NEVER;
+      }
+      if (!allowZero && milli === 0) {
+        ctx.addIssue({ code: "custom", message: `The ${label} must be greater than zero.` });
+        return z.NEVER;
+      }
+      return milli;
+    });
+}
+
+/** Optional money input → integer cents, or null when left blank. */
+export const optionalCentsSchema = z
+  .string()
+  .default("")
+  .transform((raw, ctx) => {
+    const value = raw.trim();
+    if (value === "") return null;
+    const cents = parseCents(value);
+    if (cents === null) {
+      ctx.addIssue({ code: "custom", message: "Enter an amount like 12.50." });
+      return z.NEVER;
+    }
+    return cents;
+  });
+
+/** Optional free text: trims and turns empty strings into null. */
+export function optionalText(max = 500) {
+  return z
+    .string()
+    .default("")
+    .transform((v) => v.trim())
+    .refine((v) => v.length <= max, `Use at most ${max} characters.`)
+    .transform((v) => (v === "" ? null : v));
+}
+
+export const idSchema = z.coerce.number().int().positive();
 
 /** Only allows same-site relative paths, preventing open redirects through ?next=. */
 export function safeRedirectPath(value: unknown, fallback = "/dashboard"): string {
