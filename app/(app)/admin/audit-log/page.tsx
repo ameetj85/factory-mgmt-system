@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon, ScrollTextIcon } from "lucide-react";
 import { LocalTime } from "@/components/local-time";
@@ -17,7 +19,15 @@ export const metadata: Metadata = { title: "Audit log" };
 
 const PAGE_SIZE = 50;
 
-export default async function AuditLogPage({ searchParams }: PageProps<"/admin/audit-log">) {
+export default function AuditLogPage(props: PageProps<"/admin/audit-log">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AuditLogPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function AuditLogPageContent({ searchParams }: PageProps<"/admin/audit-log">) {
   await requirePermission("audit.view");
   const params = await searchParams;
   const category = AUDIT_CATEGORIES.find((c) => c.value === params.category)?.value;

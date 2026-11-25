@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { requirePermission } from "@/lib/auth/dal";
@@ -10,7 +12,15 @@ import { UsersTable, type UserRow } from "./users-table";
 
 export const metadata: Metadata = { title: "Users" };
 
-export default async function UsersPage({ searchParams }: PageProps<"/admin/users">) {
+export default function UsersPage(props: PageProps<"/admin/users">) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <UsersPageContent {...props} />
+    </Suspense>
+  );
+}
+
+async function UsersPageContent({ searchParams }: PageProps<"/admin/users">) {
   const admin = await requirePermission("users.manage");
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { ActivityIcon, ArrowRightIcon, KeyRoundIcon, LogInIcon, ShieldCheckIcon, UsersIcon } from "lucide-react";
 import { Greeting } from "@/components/greeting";
@@ -11,10 +13,19 @@ import { requirePermission } from "@/lib/auth/dal";
 import { can, ROLE_DESCRIPTIONS, ROLE_LABELS } from "@/lib/auth/permissions";
 import { db } from "@/lib/db/client";
 import { formatAuditAction, formatRelative } from "@/lib/format";
+import { LowStockCard } from "./low-stock-card";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <DashboardPageContent />
+    </Suspense>
+  );
+}
+
+async function DashboardPageContent() {
   const user = await requirePermission("dashboard.view");
   const firstName = user.fullName.split(/\s+/)[0];
 
@@ -32,6 +43,7 @@ export default async function DashboardPage() {
       </section>
 
       {can(user.role, "audit.view") ? <AdminOverview showUsersLink={can(user.role, "users.manage")} /> : <MemberOverview />}
+      {can(user.role, "inventory.view") && <LowStockCard showApprovals={can(user.role, "inventory.approve")} />}
     </>
   );
 }
@@ -116,7 +128,7 @@ async function AdminOverview({ showUsersLink }: { showUsersLink: boolean }) {
 function MemberOverview() {
   return (
     <>
-      <PageHeader title="Your workspace" description="Modules for your role will appear in the sidebar as they come online." />
+      <PageHeader title="Your workspace" description="Everything your role can use is in the sidebar." />
       <Card className="hover-lift">
         <CardHeader>
           <CardTitle>Account security</CardTitle>
