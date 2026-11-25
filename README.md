@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Factory Management System
 
-## Getting Started
+A full-stack factory management system (MES/ERP lite) for inventory, production, equipment maintenance and quality control. Built with Next.js (App Router, Server Functions), Tailwind CSS, shadcn/ui and a SQLite database hosted on [SQLite Cloud](https://sqlitecloud.io).
 
-First, run the development server:
+Functional requirements live in [FUNCTIONAL-REQ.md](FUNCTIONAL-REQ.md).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Getting started
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Install dependencies:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```bash
+   npm install
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Copy `.env.example` to `.env.local` and fill in the values:
 
-## Learn More
+   | Variable | Purpose |
+   | --- | --- |
+   | `SQLITE_CONNECTION_STRING` | SQLite Cloud connection string, pointing at the app's own database (e.g. `/factory.sqlite`) |
+   | `APP_URL` | Public base URL, used in password reset links. Required in production. |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` | SMTP server for password reset emails |
+   | `EMAIL_FROM` | Sender address for outgoing email |
 
-To learn more about Next.js, take a look at the following resources:
+3. Apply database migrations:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npm run db:migrate
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. Start the dev server and open http://localhost:3000:
 
-## Deploy on Vercel
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   On a fresh database the sign-in page links to **initial setup**, which creates the first administrator. That page closes itself once any user exists.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run build` / `npm run start` | Production build / serve |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript check |
+| `npm run db:migrate` | Apply pending SQL migrations from `db/migrations` |
+
+## Authentication and roles
+
+- Username + password sign-in. Passwords are hashed with scrypt; sessions are opaque random tokens stored (hashed) in the `sessions` table and sent as an `HttpOnly` cookie.
+- Five failed sign-ins lock an account for 15 minutes.
+- Password reset by email: single-use links that expire after one hour. Resetting signs the user out everywhere.
+- Administrators create accounts, either setting a password or emailing the user a link to set their own.
+- Roles: **Admin**, **Production Manager**, **Shop Floor Operator**, **Warehouse Clerk**. Permissions per role are defined in `lib/auth/permissions.ts`.
+- Sign-ins, password changes and changes to users are written to an append-only audit log.
+
+## Database notes
+
+- Migrations are plain SQL files in `db/migrations`, applied in filename order and tracked in `schema_migrations`.
+- All timestamps are stored as UTC ISO-8601 strings (`YYYY-MM-DDTHH:MM:SSZ`).
+- Multi-step writes run in `BEGIN IMMEDIATE` transactions on a dedicated connection (`transaction()` in `lib/db/client.ts`), so concurrent requests never interleave inside a transaction.
