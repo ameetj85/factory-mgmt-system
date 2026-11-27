@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
   },
-  serverExternalPackages: ["@sqlitecloud/drivers", "nodemailer"],
+  // @libsql/client and its native libsql bindings are already external by default in Next.js.
+  serverExternalPackages: ["nodemailer"],
   turbopack: {
     rules: {
       "*.css": {

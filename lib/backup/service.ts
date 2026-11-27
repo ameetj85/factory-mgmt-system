@@ -1,7 +1,8 @@
 import "server-only";
 import { mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { backgroundDb as db, type SqlValue } from "@/lib/db/client";
+import { backgroundDb as db, getDatabaseDriver, type SqlValue } from "@/lib/db/client";
+import type { ManagedBackupStatus } from "@/lib/db/factory.mjs";
 import { BACKUP_NAME_PATTERN, backupFileName, createBackup, encodeBackup } from "./core.mjs";
 
 export function backupDir(): string {
@@ -14,8 +15,7 @@ export function backupKeep(): number {
 }
 
 export function databaseName(): string | null {
-  const cs = process.env.SQLITE_CONNECTION_STRING ?? "";
-  return cs.match(/\/([^/?]+)(\?|$)/)?.[1] ?? null;
+  return getDatabaseDriver().databaseName;
 }
 
 export interface BackupFile {
@@ -64,15 +64,11 @@ export async function deleteBackup(name: string): Promise<boolean> {
     .catch(() => false);
 }
 
-/** SQLite Cloud's own managed backups for this database, if enabled on the project. */
-export async function managedBackupStatus(): Promise<{ enabled: boolean; detail: string }> {
-  const name = databaseName();
-  if (!name) return { enabled: false, detail: "Database name not found in the connection string." };
+/** The database provider's own managed backups (for example Turso's point-in-time restore). */
+export async function managedBackupStatus(): Promise<ManagedBackupStatus> {
   try {
-    const rows = await db.all(`LIST BACKUPS DATABASE ${name.replace(/[^A-Za-z0-9._-]/g, "")}`);
-    return { enabled: rows.length > 0, detail: rows.length ? `${rows.length} backup generation(s) available in SQLite Cloud.` : "No managed backups yet." };
+    return await getDatabaseDriver().managedBackupStatus();
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { enabled: false, detail: /no active backups/i.test(message) ? "Not enabled for this database." : message };
+    return { label: "Provider backups", enabled: false, detail: error instanceof Error ? error.message : String(error) };
   }
 }

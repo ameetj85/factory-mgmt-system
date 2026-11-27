@@ -40,7 +40,7 @@ async function BackupsContent() {
         <StatCard label="Latest backup" value={files[0] ? <LocalTime iso={files[0].createdAt} className="text-lg" /> : "None yet"} icon={DatabaseBackupIcon} hint={files[0] ? size(files[0].size) : undefined} />
         <StatCard label="Schedule" value={interval ? `Every ${interval} h` : "Off"} icon={TimerIcon} hint={interval ? `Keeps the newest ${backupKeep()}` : "Set BACKUP_INTERVAL_HOURS to enable"} />
         <StatCard label="Stored here" value={files.length} icon={FolderIcon} hint={backupDir()} className="[&_p:last-child]:truncate" />
-        <StatCard label="SQLite Cloud backups" value={managed.enabled ? "On" : "Off"} icon={CloudIcon} hint={managed.detail} />
+        <StatCard label={managed.label} value={managed.enabled ? "On" : "Off"} icon={CloudIcon} hint={managed.detail} />
       </div>
 
       <Card>
@@ -91,13 +91,16 @@ async function BackupsContent() {
           <CardDescription>Restores never overwrite data. They only run into a new, empty database.</CardDescription>
         </CardHeader>
         <CardContent className="text-muted-foreground space-y-2 text-sm">
-          <p>1. Create a new database in your SQLite Cloud project.</p>
+          <p>1. Create a new, empty database (for Turso: <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">turso db create &lt;name&gt;</code> or the Turso dashboard).</p>
           <p>
-            2. Run <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">RESTORE_CONNECTION_STRING=&quot;sqlitecloud://…/new.sqlite?apikey=…&quot; npm run db:restore -- backups/&lt;file&gt;</code>
+            2. Run{" "}
+            <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">
+              RESTORE_DATABASE_URL=&quot;libsql://…&quot; RESTORE_AUTH_TOKEN=&quot;…&quot; npm run db:restore -- backups/&lt;file&gt;
+            </code>
           </p>
-          <p>3. Point SQLITE_CONNECTION_STRING at the new database and restart the app.</p>
+          <p>3. Point TURSO_DATABASE_URL and TURSO_AUTH_TOKEN at the new database and restart the app.</p>
           <p>
-            For off-site copies, also turn on SQLite Cloud&apos;s managed backups for the database in the SQLite Cloud dashboard, or schedule{" "}
+            {managed.enabled ? `${managed.label} also cover this database. ` : ""}For off-site copies of your own, download backup files or schedule{" "}
             <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">npm run db:backup</code> on another machine.
           </p>
         </CardContent>
