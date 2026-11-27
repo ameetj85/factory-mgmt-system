@@ -22,10 +22,14 @@
 
 # database backups (contain all business data)
 /backups
+# local database copies and exported backups (contain all business data)
+/data
 
 # misc
 .DS_Store
 *.pem
+# Office lock files (created while a document is open)
+~$*
 
 # debug
 npm-debug.log*
